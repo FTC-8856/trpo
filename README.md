@@ -1,5 +1,7 @@
 # A TRPO implementation
 
+Based off of <https://github.com/pat-coady/trpo>
+
 ## Training
 
 ```zsh
