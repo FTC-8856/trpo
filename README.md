@@ -1,5 +1,7 @@
 # A TRPO implementation
 
+![CodeQL](https://github.com/FTC-8856/trpo/workflows/CodeQL/badge.svg?branch=main)
+
 Based off of <https://github.com/pat-coady/trpo>
 
 ## Training
