@@ -1,6 +1,7 @@
 import argparse
 import os
-import pickle
+import json
+import jsonpickle
 import signal
 from datetime import datetime
 
@@ -17,7 +18,6 @@ from value import NNValueFunction
 
 
 class GracefulKiller:
-
     def __init__(self):
         self.kill_now = False
         signal.signal(signal.SIGINT, self.exit_gracefully)
@@ -41,23 +41,22 @@ def run_episode(env, policy, scaler, animate=False):
     done = False
     step = 0.0
     scale, offset = scaler.get()
-    scale[-1] = 1.0  # don't scale time step feature
-    offset[-1] = 0.0  # don't offset time step feature
+    scale[-1] = 1.0  
+    offset[-1] = 0.0  
     while not done:
         if animate:
             env.render()
-        obs = np.concatenate([obs, [step]])  # add time step feature
+        obs = np.concatenate([obs, [step]])  
         obs = obs.astype(np.float32).reshape((1, -1))
         unscaled_obs.append(obs)
-        # center and scale observations
         obs = np.float32((obs - offset) * scale)
         observes.append(obs)
         action = policy.sample(obs)
         actions.append(action)
         obs, reward, done, _ = env.step(action.flatten())
         rewards.append(reward)
-        step += 1e-3  # increment time step feature
-
+        step += 1e-3
+        
     return (np.concatenate(observes), np.concatenate(actions),
             np.array(rewards, dtype=np.float32), np.concatenate(unscaled_obs))
 
@@ -91,22 +90,23 @@ def make_model(obs_dim, act_dim):
 
 
 def load_model(folder):
-    with open(folder + 'val_func.pickle', 'rb') as f:
-        val_func = pickle.dump(f)
-    with open(folder + 'policy.pickle', 'rb') as f:
-        policy = pickle.dump(f)
-    with open(folder + 'scaler.pickle', 'rb') as f:
-        scaler = pickle.dump(f)
+    with open(os.path.join(folder, 'val_func.json')) as f:
+        val_func = jsonpickle.decode(json.load(f))
+    with open(os.path.join(folder, 'policy.json')) as f:
+        policy = jsonpickle.decode(json.load(f))
+    with open(os.path.join(folder, 'scaler.json')) as f:
+        scaler = jsonpickle.decode(json.load(f))
     return val_func, policy, scaler
 
 
 def save_model(folder, val_func, policy, scaler):
-    with open(folder + 'val_func.pickle', 'wb') as f:
-        pickle.dump(val_func, f, pickle.HIGHEST_PROTOCOL)
-    with open(folder + 'policy.pickle', 'wb') as f:
-        pickle.dump(policy, f, pickle.HIGHEST_PROTOCOL)
-    with open(folder + 'scaler.pickle', 'wb') as f:
-        pickle.dump(scaler, f, pickle.HIGHEST_PROTOCOL)
+    with open(os.path.join(folder, 'val_func.json')) as f:
+        json.dump(jsonpickle.encode(val_func), f)
+    with open(os.path.join(folder, 'policy.json')) as f:
+        json.dump(jsonpickle.encode(policy), f)
+    with open(os.path.join(folder, 'scaler.json')) as f:
+        json.dump(jsonpickle.encode(scaler), f)
+
 
 
 def train(env, policy, scaler, val_func):
@@ -131,7 +131,7 @@ def train(env, policy, scaler, val_func):
 
 def add_disc_sum_rew(trajectories, gamma):
     for trajectory in trajectories:
-        if gamma < 0.999:  # don't scale for gamma ~= 1
+        if gamma < 0.999:  
             rewards = trajectory['rewards'] * (1 - gamma)
         else:
             rewards = trajectory['rewards']
@@ -148,12 +148,11 @@ def add_value(trajectories, val_func):
 
 def add_gae(trajectories, gamma, lam):
     for trajectory in trajectories:
-        if gamma < 0.999:  # don't scale for gamma ~= 1
+        if gamma < 0.999: 
             rewards = trajectory['rewards'] * (1 - gamma)
         else:
             rewards = trajectory['rewards']
         values = trajectory['values']
-        # temporal differences
         tds = rewards - values + np.append(values[1:] * gamma, 0)
         advantages = discount(tds, gamma * lam)
         trajectory['advantages'] = advantages
@@ -164,7 +163,5 @@ def build_train_set(trajectories):
     actions = np.concatenate([t['actions'] for t in trajectories])
     disc_sum_rew = np.concatenate([t['disc_sum_rew'] for t in trajectories])
     advantages = np.concatenate([t['advantages'] for t in trajectories])
-    # normalize advantages
     advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-6)
-
     return observes, actions, advantages, disc_sum_rew

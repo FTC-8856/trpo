@@ -7,20 +7,19 @@ import numpy as np
 
 class Policy(object):
     def __init__(self, obs_dim, act_dim, kl_targ, hid1_mult, init_logvar):
-
-        self.beta = 1.0  # dynamically adjusted D_KL loss multiplier
-        eta = 50  # multiplier for D_KL-kl_targ hinge-squared loss
+        self.beta = 1.0  
+        eta = 50  
         self.kl_targ = kl_targ
         self.epochs = 20
-        self.lr_multiplier = 1.0  # dynamically adjust lr when D_KL out of control
+        self.lr_multiplier = 1.0  
         self.trpo = TRPO(obs_dim, act_dim, hid1_mult, kl_targ, init_logvar, eta)
-        self.policy = self.trpo.get_layer('policy_nn')
-        self.lr = self.policy.get_lr()  # lr calculated based on size of PolicyNN
+        self.policy_nn = self.trpo.get_layer('policy_nn')
+        self.lr = self.policy_nn.get_lr()  
         self.trpo.compile(optimizer=Adam(self.lr * self.lr_multiplier))
         self.logprob_calc = LogProb()
 
     def sample(self, obs):
-        act_means, act_logvars = self.policy(obs)
+        act_means, act_logvars = self.policy_nn(obs)
         act_stddevs = np.exp(act_logvars / 2)
 
         return np.random.normal(act_means, act_stddevs).astype(np.float32)
@@ -28,7 +27,7 @@ class Policy(object):
     def update(self, observes, actions, advantages):
         K.set_value(self.trpo.optimizer.lr, self.lr * self.lr_multiplier)
         K.set_value(self.trpo.beta, self.beta)
-        old_means, old_logvars = self.policy(observes)
+        old_means, old_logvars = self.policy_nn(observes)
         old_means = old_means.numpy()
         old_logvars = old_logvars.numpy()
         old_logp = self.logprob_calc([actions, old_means, old_logvars])
@@ -40,11 +39,10 @@ class Policy(object):
             kl, entropy = self.trpo.predict_on_batch([observes, actions, advantages,
                                                       old_means, old_logvars, old_logp])
             kl, entropy = np.mean(kl), np.mean(entropy)
-            if kl > self.kl_targ * 4:  # early stopping if D_KL diverges badly
+            if kl > self.kl_targ * 4: 
                 break
-        # TODO: too many "magic numbers" in next 8 lines of code, need to clean up
-        if kl > self.kl_targ * 2:  # servo beta to reach D_KL target
-            self.beta = np.minimum(35, 1.5 * self.beta)  # max clip beta
+        if kl > self.kl_targ * 2:  
+            self.beta = np.minimum(35, 1.5 * self.beta)
             if self.beta > 30 and self.lr_multiplier > 0.1:
                 self.lr_multiplier /= 1.5
         elif kl < self.kl_targ / 2:
