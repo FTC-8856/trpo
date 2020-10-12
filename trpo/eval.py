@@ -6,11 +6,11 @@ from datetime import datetime
 
 from gym import wrappers
 
-from constants import env_name
-from core import evaluate, init_gym, load_model, make_model, save_model, train
-from policy import Policy
-from utils import Scaler
-from value import NNValueFunction
+from trpo.constants import env_name
+from trpo.core import evaluate, init_gym, load_model, make_model, save_model, train
+from trpo.policy import Policy
+from trpo.utils import Scaler
+from trpo.value import NNValueFunction
 
 parser = argparse.ArgumentParser(
     description='Will evaluate the saved model from the given folder.')
