@@ -27,7 +27,6 @@ env = wrappers.Monitor(env, aigym_path, force=True)
 try:
     val_func, policy, scaler = load_model(args.folder)
 except BaseException as e:
-    print(e)
     val_func, policy, scaler = make_model(obs_dim, act_dim)
 train(env, policy, scaler, val_func)
 save_model(args.folder, val_func, policy, scaler)

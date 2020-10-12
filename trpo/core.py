@@ -10,7 +10,7 @@ import numpy as np
 import scipy.signal
 from gym import wrappers
 
-from constants import (batch_size, env_name, gamma, hid1_mult, init_logvar,
+from constants import (batch_size, env_name, gamma, policy_hid_list, valfunc_hid_list, init_logvar,
                        kl_targ, lam, num_episodes)
 from policy import Policy
 from utils import Scaler
@@ -41,12 +41,12 @@ def run_episode(env, policy, scaler, animate=False):
     done = False
     step = 0.0
     scale, offset = scaler.get()
-    scale[-1] = 1.0  
-    offset[-1] = 0.0  
+    scale[-1] = 1.0
+    offset[-1] = 0.0
     while not done:
         if animate:
             env.render()
-        obs = np.concatenate([obs, [step]])  
+        obs = np.concatenate([obs, [step]])
         obs = obs.astype(np.float32).reshape((1, -1))
         unscaled_obs.append(obs)
         obs = np.float32((obs - offset) * scale)
@@ -56,7 +56,7 @@ def run_episode(env, policy, scaler, animate=False):
         obs, reward, done, _ = env.step(action.flatten())
         rewards.append(reward)
         step += 1e-3
-        
+
     return (np.concatenate(observes), np.concatenate(actions),
             np.array(rewards, dtype=np.float32), np.concatenate(unscaled_obs))
 
@@ -81,11 +81,11 @@ def discount(x, gamma):
     return scipy.signal.lfilter([1.0], [1.0, -gamma], x[::-1])[::-1]
 
 
-def make_model(obs_dim, act_dim):
-    val_func = NNValueFunction(obs_dim, hid1_mult)
-    policy = Policy(obs_dim, act_dim, kl_targ,
-                    hid1_mult, init_logvar)
+def make_model(env, obs_dim, act_dim):
+    val_func = NNValueFunction(obs_dim, valfunc_hid_list)
+    policy = Policy(obs_dim, act_dim, kl_targ, policy_hid_list)
     scaler = Scaler(obs_dim)
+    run_policy(env, policy, scaler, episodes=5)
     return val_func, policy, scaler
 
 
@@ -108,7 +108,6 @@ def save_model(folder, val_func, policy, scaler):
         json.dump(jsonpickle.encode(scaler), f)
 
 
-
 def train(env, policy, scaler, val_func):
     episode = 0
     killer = GracefulKiller()
@@ -127,11 +126,31 @@ def train(env, policy, scaler, val_func):
             if input('Terminate training (y/[n])? ') == 'y':
                 break
             killer.kill_now = False
+    policy.close_sess()
+    val_func.close_sess()
 
+
+def evaluate(env, policy, scaler, val_func):
+    episode = 0
+    total_reward = 0
+    killer = GracefulKiller()
+    while episode < 100:
+        trajectories = run_policy(
+            env, policy, scaler, episodes=batch_size)
+        episode += len(trajectories)
+        for trajectory in trajectories:
+            total_reward += trajectory['rewards']
+        if killer.kill_now:
+            if input('Terminate training (y/[n])? ') == 'y':
+                break
+            killer.kill_now = False
+    policy.close_sess()
+    val_func.close_sess()
+    print('Average Reward: ' + total_reward/episode)
 
 def add_disc_sum_rew(trajectories, gamma):
     for trajectory in trajectories:
-        if gamma < 0.999:  
+        if gamma < 0.999:
             rewards = trajectory['rewards'] * (1 - gamma)
         else:
             rewards = trajectory['rewards']
@@ -148,7 +167,7 @@ def add_value(trajectories, val_func):
 
 def add_gae(trajectories, gamma, lam):
     for trajectory in trajectories:
-        if gamma < 0.999: 
+        if gamma < 0.999:
             rewards = trajectory['rewards'] * (1 - gamma)
         else:
             rewards = trajectory['rewards']

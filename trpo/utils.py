@@ -30,7 +30,6 @@ class Scaler(object):
             self.vars = (((self.m * (self.vars + np.square(self.means))) +
                           (n * (new_data_var + new_data_mean_sq))) / (self.m + n) -
                          np.square(new_means))
-            # occasionally goes negative, clip
             self.vars = np.maximum(0.0, self.vars)
             self.means = new_means
             self.m += n
