@@ -11,7 +11,7 @@ import scipy.signal
 from gym import wrappers
 
 from trpo.constants import (batch_size, env_name, gamma, init_logvar, kl_targ, lam,
-                       num_episodes, policy_hid_list, valfunc_hid_list)
+                            num_episodes, policy_hid_list, valfunc_hid_list)
 from trpo.policy import Policy
 from trpo.utils import Scaler
 from trpo.value import NNValueFunction

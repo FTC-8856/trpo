@@ -11,6 +11,7 @@ from trpo.core import init_gym, load_model, make_model, save_model, train
 from trpo.policy import Policy
 from trpo.utils import Scaler
 from trpo.value import NNValueFunction
+import tempfile
 
 parser = argparse.ArgumentParser(
     description='Will either create a new model or load a saved model from the given folder. Model will be trained and saved in the given folder.')
@@ -21,9 +22,7 @@ args = parser.parse_args()
 
 env, obs_dim, act_dim = init_gym(env_name)
 obs_dim += 1
-now = datetime.now().strftime("%b-%d_%H:%M:%S")
-aigym_path = os.path.join('/tmp', env_name, now)
-env = wrappers.Monitor(env, aigym_path, force=True)
+env = wrappers.Monitor(env, tempfile.mkstemp(), force=True)
 try:
     val_func, policy, scaler = load_model(args.folder)
 except BaseException as e:
