@@ -1,9 +1,9 @@
+import numpy as np
+import tensorflow as tf
 import tensorflow.keras.backend as K
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Dense, Layer
 from tensorflow.keras.optimizers import Adam
-import numpy as np
-import tensorflow as tf
 
 
 class Policy(object):
@@ -81,7 +81,6 @@ class Policy(object):
                                          tf.exp(self.old_log_vars_ph), axis=1)
         self.logp_old = logp_old
 
-
     def _kl_entropy(self):
 
         log_det_cov_old = tf.reduce_sum(self.old_log_vars_ph)
@@ -106,7 +105,8 @@ class Policy(object):
         loss1 = -tf.reduce_mean(self.advantages_ph *
                                 tf.exp(self.logp - self.logp_old))
         loss2 = tf.reduce_mean(self.beta_ph * self.kl)
-        loss3 = self.eta_ph * tf.square(tf.maximum(0.0, self.kl - 2.0 * self.kl_targ))
+        loss3 = self.eta_ph * \
+            tf.square(tf.maximum(0.0, self.kl - 2.0 * self.kl_targ))
         self.loss = loss1 + loss2 + loss3
         optimizer = tf.train.AdamOptimizer(self.lr_ph)
         self.train_op = optimizer.minimize(self.loss)
@@ -135,7 +135,8 @@ class Policy(object):
         loss, kl, entropy = 0, 0, 0
         for _ in range(self.epochs):
             self.sess.run(self.train_op, feed_dict)
-            loss, kl, entropy = self.sess.run([self.loss, self.kl, self.entropy], feed_dict)
+            loss, kl, entropy = self.sess.run(
+                [self.loss, self.kl, self.entropy], feed_dict)
             if kl > self.kl_targ * 4:  # early stopping if D_KL diverges badly
                 break
         if kl > self.kl_targ * 2:  # servo beta to reach D_KL target
@@ -147,8 +148,5 @@ class Policy(object):
             if self.beta < (1 / 30) and self.lr_multiplier < 10:
                 self.lr_multiplier *= 1.5
 
-    
     def close_sess(self):
         self.sess.close()
-
-

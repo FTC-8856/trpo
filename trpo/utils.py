@@ -1,8 +1,9 @@
-import numpy as np
+import csv
+import glob
 import os
 import shutil
-import glob
-import csv
+
+import numpy as np
 
 
 class Scaler(object):
@@ -36,4 +37,3 @@ class Scaler(object):
 
     def get(self):
         return 1/(np.sqrt(self.vars) + 0.1)/3, self.means
-

@@ -1,17 +1,17 @@
 import argparse
-import os
 import json
-import jsonpickle
+import os
 import signal
 from datetime import datetime
 
 import gym
+import jsonpickle
 import numpy as np
 import scipy.signal
 from gym import wrappers
 
-from constants import (batch_size, env_name, gamma, policy_hid_list, valfunc_hid_list, init_logvar,
-                       kl_targ, lam, num_episodes)
+from constants import (batch_size, env_name, gamma, init_logvar, kl_targ, lam,
+                       num_episodes, policy_hid_list, valfunc_hid_list)
 from policy import Policy
 from utils import Scaler
 from value import NNValueFunction
@@ -147,6 +147,7 @@ def evaluate(env, policy, scaler, val_func):
     policy.close_sess()
     val_func.close_sess()
     print('Average Reward: ' + total_reward/episode)
+
 
 def add_disc_sum_rew(trajectories, gamma):
     for trajectory in trajectories:

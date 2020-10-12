@@ -1,10 +1,10 @@
-from tensorflow.keras import Model
-from tensorflow.keras.layers import Input, Dense
-from tensorflow.keras.optimizers import Adam
-from sklearn.utils import shuffle
+from random import shuffle
 
 import numpy as np
 import tensorflow as tf
+from tensorflow.keras import Model
+from tensorflow.keras.layers import Dense, Input
+from tensorflow.keras.optimizers import Adam
 
 
 class NNValueFunction(object):
@@ -53,7 +53,6 @@ class NNValueFunction(object):
         self.sess = tf.Session(graph=self.g)
         self.sess.run(self.init)
 
-
     def fit(self, x, y):
         num_batches = max(x.shape[0] // 256, 1)
         batch_size = x.shape[0] // num_batches
@@ -71,15 +70,15 @@ class NNValueFunction(object):
                 end = (j + 1) * batch_size
                 feed_dict = {self.obs_ph: x_train[start:end, :],
                              self.val_ph: y_train[start:end]}
-                _, l = self.sess.run([self.train_op, self.loss], feed_dict=feed_dict)
+                _, l = self.sess.run(
+                    [self.train_op, self.loss], feed_dict=feed_dict)
         y_hat = self.predict(x)
-        np.mean(np.square(y_hat - y))     
-  
+        np.mean(np.square(y_hat - y))
 
     def predict(self, x):
         feed_dict = {self.obs_ph: x}
         y_hat = self.sess.run(self.out, feed_dict=feed_dict)
         return np.squeeze(y_hat)
-    
+
     def close_sess(self):
         self.sess.close()

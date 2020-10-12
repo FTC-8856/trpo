@@ -6,11 +6,11 @@ from datetime import datetime
 
 from gym import wrappers
 
-from core import init_gym, load_model, make_model, evaluate, save_model, train
+from constants import env_name
+from core import evaluate, init_gym, load_model, make_model, save_model, train
 from policy import Policy
 from utils import Scaler
 from value import NNValueFunction
-from constants import env_name
 
 parser = argparse.ArgumentParser(
     description='Will evaluate the saved model from the given folder.')

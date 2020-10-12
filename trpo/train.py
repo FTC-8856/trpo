@@ -6,11 +6,11 @@ from datetime import datetime
 
 from gym import wrappers
 
-from core import (load_model, make_model, train, save_model, init_gym)
+from constants import env_name
+from core import init_gym, load_model, make_model, save_model, train
 from policy import Policy
 from utils import Scaler
 from value import NNValueFunction
-from constants import env_name
 
 parser = argparse.ArgumentParser(
     description='Will either create a new model or load a saved model from the given folder. Model will be trained and saved in the given folder.')
